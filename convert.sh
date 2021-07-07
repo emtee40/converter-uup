@@ -294,7 +294,7 @@ fi
 
 if ! which cabextract >/dev/null 2>&1 \
 || ! which wimlib-imagex >/dev/null 2>&1 \
-|| ! which chntpw >/dev/null 2>&1 \
+|| ! sudo which chntpw >/dev/null 2>&1 \
 || ! which genisoimage >/dev/null 2>&1 \
 && ! which mkisofs >/dev/null 2>&1; then
   echo "One of required applications is not installed."
@@ -466,7 +466,7 @@ nv 1 InstRoot
 ed InstRoot
 X:\$Windows.~bt
 q
-y' | chntpw -e "$tempDir/SOFTWARE" >/dev/null
+y' | sudo chntpw -e "$tempDir/SOFTWARE" >/dev/null
 
 wimlib-imagex update ISODIR/sources/boot.wim 1 \
   --command "add $tempDir/SOFTWARE /Windows/System32/config/SOFTWARE" >/dev/null
