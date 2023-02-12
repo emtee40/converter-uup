@@ -374,6 +374,10 @@ function errorHandler() {
   fi
 }
 
+function version() { 
+  echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
+}
+
 if [ -e ISODIR ]; then
   rm -rf ISODIR
 fi
@@ -418,12 +422,18 @@ if [ $runVirtualEditions -eq 1 ] && [ "$VIRTUAL_EDITIONS_PLUGIN_LOADED" != "1" ]
 fi
 
 echo ""
+cabextractVersion=$(cabextract --version | cut -d ' ' -f 3)
+if [ $(version $cabextractVersion) -ge $(version "1.10") ] ; then
+  keepSymlinks="-k"
+else
+  keepSymlinks=""
+fi
 for file in `find "$uupDir" -type f -iname "*.cab" -not -iname "*windows1*-kb*.cab" -not -iname "ssu-*.cab" -not -iname "*desktopdeployment*.cab" -not -iname "*aggregatedmetadata*.cab"`; do
   fileName=`basename $file .cab`
   echo -e "$infoColor""CAB -> ESD:""$resetColor"" $fileName"
 
   mkdir "$extractDir"
-  cabextract -d "$extractDir" "$file" >/dev/null 2>/dev/null
+  cabextract "$keepSymlinks" -d "$extractDir" "$file" >/dev/null 2>/dev/null
   errorHandler $? "Failed to extract $fileName.cab"
 
   wimlib-imagex capture "$extractDir" "$tempDir/$fileName.esd" \
