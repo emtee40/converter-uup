@@ -433,7 +433,7 @@ for file in `find "$uupDir" -type f -iname "*.cab" -not -iname "*windows1*-kb*.c
   echo -e "$infoColor""CAB -> ESD:""$resetColor"" $fileName"
 
   mkdir "$extractDir"
-  cabextract "$keepSymlinks" -d "$extractDir" "$file" >/dev/null 2>/dev/null
+  cabextract $keepSymlinks -d "$extractDir" "$file" >/dev/null 2>/dev/null
   errorHandler $? "Failed to extract $fileName.cab"
 
   wimlib-imagex capture "$extractDir" "$tempDir/$fileName.esd" \
