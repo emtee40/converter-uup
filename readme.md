@@ -63,6 +63,7 @@ VIRTUAL_EDITIONS_LIST='space delimited editions sequence'
 
 ### Requirements
 This script uses the following commands to do its work:
+ * aria2c - to download the required files
  * cabextract - to extract cabs
  * wimlib-imagex - to export files from metadata ESD
  * chntpw - to modify registry of first index of boot.wim
@@ -94,6 +95,6 @@ After Homebrew was installed, you can install the requirements using:
 
 ```bash
 brew tap sidneys/homebrew
-brew install cabextract wimlib cdrtools sidneys/homebrew/chntpw
+brew install aria2 cabextract wimlib cdrtools sidneys/homebrew/chntpw
 ```
 
