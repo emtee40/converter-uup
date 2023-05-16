@@ -69,32 +69,39 @@ This script uses the following commands to do its work:
  * chntpw - to modify registry of first index of boot.wim
  * genisoimage or mkisofs - to create ISO image
 
-###### Linux
-If you use Debian or Ubuntu based distribution you can quickly install these
-using the following command:
+##### Linux
+Prerequisites can be installed using the distribution's package manager.
 
+###### Debian-based distributions, including Ubuntu
 ```bash
-sudo apt install cabextract wimtools chntpw genisoimage
+sudo apt install aria2 cabextract wimtools chntpw genisoimage
 ```
 
-If you use Arch Linux you can also install these using the following command:
+###### Arch Linux
 ```bash
-sudo pacman -S cabextract wimlib chntpw cdrtools
+sudo pacman -S aria2 cabextract wimlib chntpw cdrtools
 ```
-If you use Fedora you can also install these using the following command:
+
+###### Fedora
 ```bash
-sudo dnf install cabextract wimlib-utils chntpw genisoimage
+sudo dnf install aria2 cabextract wimlib-utils chntpw genisoimage
 ```
 
 If you use any other distribution, then you will need to check its repository
 for packages needed to run this script.
 
-###### macOS
-macOS requires [Homebrew](https://brew.sh) to install the prerequisite software.
-After Homebrew was installed, you can install the requirements using:
+##### macOS
+macOS requires a package manager such as [MacPorts](https://macports.org) or
+[Homebrew](https://brew.sh) to install the prerequisite software. With a package
+manager installed, you can install the prerequisites.
 
+###### MacPorts
+```bash
+sudo port install aria2 cabextract cdrtools chntpw wimlib
+```
+
+###### Homebrew
 ```bash
 brew tap sidneys/homebrew
 brew install aria2 cabextract wimlib cdrtools sidneys/homebrew/chntpw
 ```
-
