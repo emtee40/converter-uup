@@ -102,6 +102,6 @@ sudo port install aria2 cabextract cdrtools chntpw wimlib
 
 ###### Homebrew
 ```bash
-brew tap sidneys/homebrew
-brew install aria2 cabextract wimlib cdrtools sidneys/homebrew/chntpw
+brew tap minacle/chntpw
+brew install cabextract wimlib cdrtools minacle/chntpw/chntpw
 ```
