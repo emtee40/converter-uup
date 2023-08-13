@@ -1,17 +1,19 @@
 #!/bin/bash
 scriptName="UUP Converter v0.7.2"
-UUP_CONVERTER_SCRIPT=1
+export UUP_CONVERTER_SCRIPT=1
 
 export PATH=${PATH}:/usr/sbin
 
-if [ -f `dirname $0`/convert_ve_plugin ]; then
-  . `dirname $0`/convert_ve_plugin
+BASE_DIR=$(dirname "$0")
+
+if [ -f "$BASE_DIR"/convert_ve_plugin ]; then
+  . "$BASE_DIR"/convert_ve_plugin
 fi
 
-if [ -f `dirname $0`/convert_config_linux ] && [ `uname` == "Linux" ]; then
-  . `dirname $0`/convert_config_linux
-elif [ -f `dirname $0`/convert_config_macos ] && [ `uname` == "Darwin" ]; then
-  . `dirname $0`/convert_config_macos
+if [ -f "$BASE_DIR"/convert_config_linux ] && [ "$(uname)" == "Linux" ]; then
+  . "$BASE_DIR"/convert_config_linux
+elif [ -f "$BASE_DIR"/convert_config_macos ] && [ "$(uname)" == "Darwin" ]; then
+  . "$BASE_DIR"/convert_config_macos
 else
   VIRTUAL_EDITIONS_LIST="CoreSingleLanguage Enterprise EnterpriseN Education \
   EducationN ProfessionalEducation ProfessionalEducationN \
@@ -276,7 +278,7 @@ infoColor="\033[1;94m"
 errorColor="\033[1;91m"
 resetColor="\033[0m"
 
-if [ "$1" == "-?" -o "$1" == "--help" -o "$1" == "-h" ]; then
+if [ "$1" == "-?" ] || [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
   echo "Usage:"
   echo "$0 [compression] [uups_directory] [create_virtual_editions]"
   echo ""
@@ -288,9 +290,9 @@ if [ "$1" == "-?" -o "$1" == "--help" -o "$1" == "-h" ]; then
   echo "0 - do not create virtual editions (default)"
   echo "1 - create virtual edtitions"
   echo ""
-  if [ `uname` == "Linux" ]; then
+  if [ "$(uname)" == "Linux" ]; then
     echo -e "${infoColor}convert_config_linux file${resetColor}"
-  elif [ `uname` == "Darwin" ]; then
+  elif [ "$(uname)" == "Darwin" ]; then
     echo -e "${infoColor}convert_config_macos file${resetColor}"
   fi
   echo "This file can be used to configure some advanced options of this script."
@@ -325,25 +327,25 @@ if [ $mkiso_present -eq 0 ]; then
   exit 1
 fi
 
-if ! [ -z $1 ]; then
+if [ -n "$1" ]; then
   type="$1"
 else
   type="wim"
 fi
 
-if ! [ "$type" == "wim" -o "$type" == "esd" ]; then
+if [ "$type" != "wim" ] && [ "$type" != "esd" ]; then
   echo -e "$errorColor""Incorrect compression type.""$resetColor"
   echo "Possible options: wim, esd"
   exit 1
 fi
 
-if ! [ -z $2 ]; then
+if [ -n "$2" ]; then
   uupDir="$2"
 else
   uupDir="UUPs"
 fi
 
-if ! [ -z $3 ]; then
+if [ -n "$3" ]; then
   runVirtualEditions="$3"
 else
   runVirtualEditions=0
@@ -367,7 +369,7 @@ function cleanup() {
 }
 
 function errorHandler() {
-  if [ $1 != 0 ]; then
+  if [ "$1" != 0 ]; then
     echo -e "${errorColor}$2${resetColor}"
     cleanup
     exit 1
@@ -396,40 +398,40 @@ fi
 list=
 
 firstMetadata=$(head -1 <<< "$metadataFiles")
-getLang=`wimlib-imagex info "$firstMetadata" 3`
-lang=`grep -i "^Default Language:" <<< "$getLang" | sed "s/.*  //g"`
+getLang=$(wimlib-imagex info "$firstMetadata" 3)
+lang=$(grep -i "^Default Language:" <<< "$getLang" | sed "s/.*  //g")
 #lang=$(grep -i "_..-.*.esd" <<< "$metadataFiles" | head -1 | tr '[:upper:]' '[:lower:]' | sed 's/.*_//g;s/.esd//g')
 metadataFiles=$(grep -i "$lang" <<< "$metadataFiles" | sort | uniq)
 firstMetadata=$(head -1 <<< "$metadataFiles")
 
-tempDir=`mktemp -d`
+tempDir=$(mktemp -d)
 extractDir="$tempDir/extract"
 
 echo -e "\033[1m$scriptName\033[0m"
 
 updatesDetected=false
-for file in `find "$uupDir" -type f -iname "*windows1*-kb*.cab" -or -iname "ssu-*.cab"`; do
+while IFS= read -r -d '' file; do
   updatesDetected=true
-done
+done < <(find "$uupDir" -print0 -type f -iname "*windows1*-kb*.cab" -or -iname "ssu-*.cab")
 
 if [ $updatesDetected == true ]; then
   echo -e "\033[33mNote: This script does not and cannot support the integration of updates.\nUse the Windows version of the converter to integrate updates."
 fi
 
-if [ $runVirtualEditions -eq 1 ] && [ "$VIRTUAL_EDITIONS_PLUGIN_LOADED" != "1" ]; then
+if [ "$runVirtualEditions" -eq 1 ] && [ "$VIRTUAL_EDITIONS_PLUGIN_LOADED" != "1" ]; then
   echo "Virtual editions will be not created, because plugin isn't loaded."
   runVirtualEditions=0
 fi
 
 echo ""
 cabextractVersion=$(cabextract --version | cut -d ' ' -f 3)
-if [ $(version $cabextractVersion) -ge $(version "1.10") ] ; then
+if [ "$(version "$cabextractVersion")" -ge "$(version "1.10")" ] ; then
   keepSymlinks="-k"
 else
   keepSymlinks=""
 fi
-for file in `find "$uupDir" -type f -iname "*.cab" -not -iname "*windows1*-kb*.cab" -not -iname "ssu-*.cab" -not -iname "*desktopdeployment*.cab" -not -iname "*aggregatedmetadata*.cab"`; do
-  fileName=`basename $file .cab`
+while IFS= read -r -d '' file; do
+  fileName=$(basename "$file" .cab)
   echo -e "$infoColor""CAB -> ESD:""$resetColor"" $fileName"
 
   mkdir "$extractDir"
@@ -442,7 +444,8 @@ for file in `find "$uupDir" -type f -iname "*.cab" -not -iname "*windows1*-kb*.c
   errorHandler $? "Failed to create $fileName.esd"
 
   rm -rf "$extractDir"
-done
+done < <(find "$uupDir" -print0 -type f -iname "*.cab" -not -iname "*windows1*-kb*.cab" -not -iname "ssu-*.cab" -not -iname "*desktopdeployment*.cab" -not -iname "*aggregatedmetadata*.cab")
+
 
 fileName=
 file=
@@ -533,13 +536,16 @@ done
 files=$(find ISODIR -regex ".*/sources/.*" | eval grep $list)
 list=
 
-echo "delete /Windows/System32/winpeshl.ini" >"$tempDir/update.txt"
-echo "add ISODIR/setup.exe /setup.exe" >>"$tempDir/update.txt"
-echo "add ISODIR/sources/inf/setup.cfg /sources/inf/setup.cfg" >>"$tempDir/update.txt"
-echo "add ISODIR/sources/$bckimg /sources/background.bmp" >>"$tempDir/update.txt"
-echo "add ISODIR/sources/$bckimg /Windows/system32/setup.bmp" >>"$tempDir/update.txt"
-echo "add ISODIR/sources/$bckimg /Windows/system32/winpe.jpg" >>"$tempDir/update.txt"
-echo "add ISODIR/sources/$bckimg /Windows/system32/winre.jpg" >>"$tempDir/update.txt"
+cat >"$tempDir/update.txt" <<EOF
+delete /Windows/System32/winpeshl.ini
+add ISODIR/setup.exe /setup.exe
+add ISODIR/sources/inf/setup.cfg /sources/inf/setup.cfg
+add ISODIR/sources/$bckimg /sources/background.bmp
+add ISODIR/sources/$bckimg /Windows/system32/setup.bmp
+add ISODIR/sources/$bckimg /Windows/system32/winpe.jpg
+add ISODIR/sources/$bckimg /Windows/system32/winre.jpg
+EOF
+
 for i in $files; do
     echo "add ISODIR/$i /$i" >>"$tempDir/update.txt"
 done
@@ -554,18 +560,18 @@ if [ -e ./ISODIR/sources/winpe.jpg ]; then
 fi
 
 refglobs=false
-for file in `find "$tempDir" -type f -iname "*.esd"`; do
+while IFS= read -r -d '' file; do
   refglobs=true
-done
+done < <(find "$tempDir" -print0 -type f -iname "*.esd")
 
 echo ""
 indexesExported=0
 for metadata in $metadataFiles; do
-  currentInfo=`wimlib-imagex info "$metadata" 3`
+  currentInfo=$(wimlib-imagex info "$metadata" 3)
 
-  currentEdition=`grep -i "^Edition ID:" <<< "$currentInfo" | sed "s/.*  //g"`
-  currentName=`grep -i "^Name:" <<< "$currentInfo" | sed "s/.*  //g"`
-  currentType=`grep -i "^Installation Type:" <<< "$currentInfo" | sed "s/.*  //g"`
+  currentEdition=$(grep -i "^Edition ID:" <<< "$currentInfo" | sed "s/.*  //g")
+  currentName=$(grep -i "^Name:" <<< "$currentInfo" | sed "s/.*  //g")
+  currentType=$(grep -i "^Installation Type:" <<< "$currentInfo" | sed "s/.*  //g")
 
   if [ "$currentType" == "Server Core" ] && [ "$currentEdition" == "ServerStandard" ]; then
     currentEdition="ServerStandardCore"
@@ -575,43 +581,43 @@ for metadata in $metadataFiles; do
   fi
 
   editionName="Windows 10 $currentEdition"
-  if echo $currentName | grep -ow "Windows 11" >/dev/null; then
+  if echo "$currentName" | grep -ow "Windows 11" >/dev/null; then
     editionName="Windows 11 $currentEdition"
   fi
-  if echo $currentEdition | grep -i "^Server" >/dev/null; then
+  if echo "$currentEdition" | grep -i "^Server" >/dev/null; then
     editionName="Windows Server 2022 $currentEdition"
   fi
 
   echo -e "$infoColor""Exporting $editionName to install.$type...""$resetColor"
 
   if [ $refglobs == true ]; then
-    wimlib-imagex export "$metadata" 3 ISODIR/sources/install.$type \
+    wimlib-imagex export "$metadata" 3 "ISODIR/sources/install.$type" \
       "$editionName" $compressParam --ref={"$uupDir","$tempDir"}/*.[eE][sS][dD]
   else
-    wimlib-imagex export "$metadata" 3 ISODIR/sources/install.$type \
+    wimlib-imagex export "$metadata" 3 "ISODIR/sources/install.$type" \
       "$editionName" $compressParam --ref="$uupDir"/*.[eE][sS][dD]
   fi
 
   errorHandler $? "Failed to export $editionName to install.$type""$resetColor"
 
-  let indexesExported++
+  ((indexesExported++))
 
-  wimlib-imagex info ISODIR/sources/install.$type $indexesExported \
+  wimlib-imagex info "ISODIR/sources/install.$type" $indexesExported \
     --image-property FLAGS="$currentEdition" >/dev/null
 
   echo ""
   echo -e "$infoColor""Adding winre.wim for $editionName...""$resetColor"
-  wimlib-imagex update ISODIR/sources/install.$type $indexesExported \
+  wimlib-imagex update "ISODIR/sources/install.$type" $indexesExported \
     --command "add $tempDir/winre.wim /Windows/System32/Recovery/winre.wim"
 
   echo ""
 done
 
-info=`wimlib-imagex info "$firstMetadata" 3`
-build=`grep -i "^Build:" <<< "$info" | sed "s/.*  //g"`
+info=$(wimlib-imagex info "$firstMetadata" 3)
+build=$(grep -i "^Build:" <<< "$info" | sed "s/.*  //g")
 
 addedVirtualEditions=0
-if [ $runVirtualEditions -eq 1 ] && [ $build -ge 17063 ]; then
+if [ "$runVirtualEditions" -eq 1 ] && [ "$build" -ge 17063 ]; then
   echo -e "$infoColor""Creating virtual editions...""$resetColor"
   for virtualEdition in $VIRTUAL_EDITIONS_LIST; do
     echo -e "$infoColor""Adding $virtualEdition edition...""$resetColor"
@@ -619,17 +625,17 @@ if [ $runVirtualEditions -eq 1 ] && [ $build -ge 17063 ]; then
     error=$?
     if [ $error -ne 1 ]; then
       errorHandler $error "Failed to create virtual edition"
-      let addedVirtualEditions++
+      ((addedVirtualEditions++))
     fi
     echo ""
   done
-elif [ $build -lt 17063 ]; then
+elif [ "$build" -lt 17063 ]; then
   echo "Virtual editions creation requires build 17063 or later"
 fi
 
-let indexesSum=$addedVirtualEditions+$indexesExported
-spbuild=`grep -i "^Service Pack Build:" <<< "$info" | sed "s/.*  //g"`
-arch=`grep -i "^Architecture:" <<< "$info" | sed "s/.*  //g"`
+((indexesSum=addedVirtualEditions+indexesExported))
+spbuild=$(grep -i "^Service Pack Build:" <<< "$info" | sed "s/.*  //g")
+arch=$(grep -i "^Architecture:" <<< "$info" | sed "s/.*  //g")
 
 if [ "$arch" == "x86_64" ]; then
   arch="x64"
@@ -638,11 +644,11 @@ fi
 if [ $indexesSum -gt 1 ]; then
   isoEdition="MULTI"
 else
-  isoEdition=`grep -i "^Edition ID:" <<< "$info" | sed "s/.*  //g"`
+  isoEdition=$(grep -i "^Edition ID:" <<< "$info" | sed "s/.*  //g")
 fi
 
-isoLabel=`tr "[:lower:]" "[:upper:]" <<< "${build}.${spbuild}_${arch}_${lang}"`
-isoName=`tr "[:lower:]" "[:upper:]" <<< "${build}.${spbuild}_${isoEdition}_${arch}_${lang}.iso"`
+isoLabel=$(tr "[:lower:]" "[:upper:]" <<< "${build}.${spbuild}_${arch}_${lang}")
+isoName=$(tr "[:lower:]" "[:upper:]" <<< "${build}.${spbuild}_${isoEdition}_${arch}_${lang}.iso")
 
 if [ -e "$isoName" ]; then
   rm "$isoName"
@@ -650,11 +656,11 @@ fi
 
 if [ $addedVirtualEditions -ge 1 ]; then
   echo -e "$infoColor""Optimizing install.$type...""$resetColor"
-  wimlib-imagex optimize ISODIR/sources/install.$type
+  wimlib-imagex optimize "ISODIR/sources/install.$type"
   echo ""
 fi
 
-if [ $build -ge 18890 ]; then
+if [ "$build" -ge 18890 ]; then
   wimlib-imagex extract "$firstMetadata" 3 "/Windows/Boot/Fonts" \
     --no-acls --dest-dir="ISODIR/boot" >/dev/null
   mv -f ISODIR/boot/Fonts/* ISODIR/boot/fonts
